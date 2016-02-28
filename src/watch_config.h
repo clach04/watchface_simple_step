@@ -24,7 +24,7 @@
     #define BT_POS GRect(0, 100, 180, 180) /* probably taller than really needed */
 
     #define DATE_ALIGN GTextAlignmentCenter
-    #define DATE_POS GRect(0, 120, 180, 180) /* probably taller than really needed */
+    #define DATE_POS GRect(0, 100, 180, 180) /* probably taller than really needed */
 
     #define BAT_ALIGN GTextAlignmentCenter
     #ifdef DRAW_BATTERY
