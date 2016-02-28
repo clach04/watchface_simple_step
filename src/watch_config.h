@@ -12,7 +12,7 @@
 #endif /* PBL_HEALTH */
 
 #define DRAW_BATTERY
-#define DRAW_SMALL_BATTERY
+//#define DRAW_SMALL_BATTERY
 
 #ifdef PBL_ROUND /* 180x180 */
 /*TODO center/move right*/
@@ -34,7 +34,12 @@
     #define CLOCK_POS GRect(0, 52, 144, 168) /* probably taller than really needed */
     #define HEALTH_POS GRect(0, 40, 144, 168)
     #define BT_POS GRect(0, 120, 144, 168) /* probably taller than really needed */
-    #define DATE_POS GRect(0, 140, 144, 168) /* probably taller than really needed */
+
+#define DATE_FMT_STR "%A, %d %b"  /* TODO review %d for day */
+#define MAX_DATE_STR "Wednesday, 00 Aug"  /* if custom version of DATE_FMT_STR is set, MAX_DATE_STR  needs to be updated too */
+    //#define DATE_POS GRect(0, 140, 144, 168) /* probably taller than really needed */
+    #define DATE_POS GRect(0, 100, 144, 168) /* probably taller than really needed */
+
     #ifdef DRAW_BATTERY
         #define BAT_POS GRect(5, 150, 144, 168)
     #else

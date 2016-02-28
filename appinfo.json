@@ -5,23 +5,24 @@
         "KEY_VIBRATE_ON_DISCONNECT": 1
     },
     "capabilities": [
-        "configurable"
+        "configurable",
+        "health"
     ],
     "companyName": "clach04",
     "enableMultiJS": true,
-    "longName": "FILL ME IN!",
+    "longName": "Simple Steps",
     "projectType": "native",
     "resources": {
         "media": []
     },
     "sdkVersion": "3",
-    "shortName": "FILL ME IN!",
+    "shortName": "Simple Steps",
     "targetPlatforms": [
         "aplite",
         "basalt",
         "chalk"
     ],
-    "uuid": "33a003e9-91ec-40fe-b652-b41248212f74",
+    "uuid": "87d697d9-9b50-41a4-82e3-118a5c4466e3",
     "versionLabel": "0.1",
     "watchapp": {
         "watchface": true
