@@ -1,9 +1,12 @@
 #include <pebble.h>
-#include "watchface.h"
-
+#include <pebble_process_info.h>  // ONLY for get_major_app_version()
+extern const PebbleProcessInfo __pbl_app_info;  // ONLY for get_major_app_version()
+    
 #ifdef USE_SHADOW_TIME_EFFECT
 #include "effect_layer.h"  /* from https://github.com/ygalanter/EffectLayer */
 #endif /* USE_SHADOW_TIME_EFFECT */
+
+#include "watchface.h"
 
 
 #ifdef PBL_BW
@@ -135,7 +138,7 @@ void handle_bluetooth(bool connected)
     }
     else
     {
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "%s() bluetooth DISconnected", __func__); // TODO open issue with Pebble - Why is this NOT showing up in debug log?
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "%s() bluetooth DISconnected", __func__); // TODO open issue with Pebble - Why is this NOT showing up in debug log? Presumbly as BT is needed even in emulator and logging is thrown away without connection?
         #ifdef BT_DISCONNECT_IMAGE
             bitmap_layer_set_bitmap(bluetooth_blayer, bluetooth_disconnect_bitmap);
         #else /* BT_DISCONNECT_IMAGE */
@@ -201,6 +204,14 @@ static void health_handler(HealthEventType event, void *context)
         case HealthEventSleepUpdate:
             APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService HealthEventSleepUpdate event");
             break;
+#ifdef PBL_PLATFORM_DIORITE  // FIXME replace with new equiv of PBL_SDK_4. Note, will not be needed once SDK4 is out of beta
+        case HealthEventMetricAlert:
+            APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService HealthEventMetricAlert event");
+            break;
+        case HealthEventHeartRateUpdate:
+            APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService HealthEventHeartRateUpdate event");
+            break;
+#endif /* PBL_PLATFORM_DIORITE  */
     }
 }
 
@@ -511,15 +522,19 @@ void update_time() {
         } else {
             // 12 hour format
             strftime(buffer, sizeof(buffer), "%I:%M", tick_time); // produces leading zero for hour and minute
-#ifdef REMOVE_LEADING_ZERO_FROM_TIME
-            if (buffer[0] == '0')
-            {
-                memmove(&buffer[0], &buffer[1], sizeof(buffer) - 1); // remove leading zero
-            }
-#endif /* REMOVE_LEADING_ZERO_FROM_TIME */
         }
     }
 #endif /* DEBUG_TIME */
+
+#ifdef REMOVE_LEADING_ZERO_FROM_TIME
+    if(clock_is_24h_style() == false)
+    {
+        if (buffer[0] == '0')
+        {
+            memmove(&buffer[0], &buffer[1], sizeof(buffer) - 1); // remove leading zero
+        }
+    }
+#endif /* REMOVE_LEADING_ZERO_FROM_TIME */
 
 #ifndef NO_DATE
     /* Update the date only when the day changes */
@@ -657,92 +672,128 @@ void in_recv_handler(DictionaryIterator *iterator, void *context)
 {
     Tuple *t=NULL;
 
+    /* NOTE if new entries are added, increase MAX_MESSAGE_SIZE_OUT macro */
+
     APP_LOG(APP_LOG_LEVEL_DEBUG, "in_recv_handler() called");
-    t = dict_read_first(iterator);
-    while(t != NULL)
+    t = dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
+    if (t)
     {
-        switch(t->key)
-        {
-            /* NOTE if new entries are added, increase MAX_MESSAGE_SIZE_OUT macro  */
-
-            case KEY_TIME_COLOR:
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "got KEY_TIME_COLOR");
-                config_time_color = (int)t->value->int32;
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting time color: 0x%06x", config_time_color);
-                persist_write_int(KEY_TIME_COLOR, config_time_color);
-                time_color = GColorFromHEX(config_time_color);
-                text_layer_set_text_color(time_layer, time_color);
-
-                if (date_layer) /* or #ifndef NO_DATE */
-                {
-                    text_layer_set_text_color(date_layer, time_color);
-                }
-                if (battery_layer)
-                {
-                    #ifndef DRAW_BATTERY
-                    // TODO - this is no longer needed?
-                        text_layer_set_text_color(battery_layer, time_color);
-                    #endif /* DRAW_BATTERY */
-                }
-                if (bluetooth_tlayer)
-                {
-                    text_layer_set_text_color(bluetooth_tlayer, time_color);
-                }
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "TIME COLOR DONE");
-                break;
-
-            case KEY_BACKGROUND_COLOR:
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "got KEY_BACKGROUND_COLOR");
-                config_background_color = (int)t->value->int32;
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting background color: 0x%06x", config_background_color);
-                persist_write_int(KEY_BACKGROUND_COLOR, config_background_color);
-                background_color = GColorFromHEX(config_background_color);
-                window_set_background_color(main_window, background_color);
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "BACKGROUND COLOR DONE");
-                break;
-
-            case KEY_VIBRATE_ON_DISCONNECT:
-                APP_LOG(APP_LOG_LEVEL_DEBUG, "got KEY_VIBRATE_ON_DISCONNECT");
-                config_time_vib_on_disconnect = (bool)t->value->int32;  /* this doesn't feel correct... */
-                APP_LOG(APP_LOG_LEVEL_INFO, "Persisting vib_on_disconnect: %d", (int) config_time_vib_on_disconnect);
-                persist_write_bool(KEY_VIBRATE_ON_DISCONNECT, config_time_vib_on_disconnect);
-                break;
-
-            /* NOTE if new entries are added, increase MAX_MESSAGE_SIZE_OUT macro  */
-
-            default:
-                APP_LOG(APP_LOG_LEVEL_ERROR, "Unknown key %d! :-(", (int) t->key);
-                break;
-        }
-        t = dict_read_next(iterator);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "got MESSAGE_KEY_BACKGROUND_COLOR");
+        config_background_color = (int)t->value->int32;
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting background color: 0x%06x", config_background_color);
+        persist_write_int(MESSAGE_KEY_BACKGROUND_COLOR, config_background_color);
+        background_color = GColorFromHEX(config_background_color);
+        window_set_background_color(main_window, background_color);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "BACKGROUND COLOR DONE");
     }
+
+    t = dict_find(iterator, MESSAGE_KEY_VIBRATE_ON_DISCONNECT);
+    if (t)
+    {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "got MESSAGE_KEY_VIBRATE_ON_DISCONNECT");
+        config_time_vib_on_disconnect = (bool)t->value->int32;  /* this doesn't feel correct... */
+        APP_LOG(APP_LOG_LEVEL_INFO, "Persisting vib_on_disconnect: %d", (int) config_time_vib_on_disconnect);
+        persist_write_bool(MESSAGE_KEY_VIBRATE_ON_DISCONNECT, config_time_vib_on_disconnect);
+    }
+
+    t = dict_find(iterator, MESSAGE_KEY_TIME_COLOR);
+    if (t)
+    {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "got MESSAGE_KEY_TIME_COLOR");
+        config_time_color = (int)t->value->int32;
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting time color: 0x%06x", config_time_color);
+        persist_write_int(MESSAGE_KEY_TIME_COLOR, config_time_color);
+        time_color = GColorFromHEX(config_time_color);
+        text_layer_set_text_color(time_layer, time_color);
+
+        if (date_layer) /* or #ifndef NO_DATE */
+        {
+            text_layer_set_text_color(date_layer, time_color);
+        }
+        if (bluetooth_tlayer)
+        {
+            text_layer_set_text_color(bluetooth_tlayer, time_color);
+        }
+        if (health_tlayer)
+        {
+            text_layer_set_text_color(health_tlayer, time_color);
+        }
+        // battery done last, in case battery draw (i.e. NOT text) is used
+        // and mark dirty is called (forgets to then repaint other stuff)
+        if (battery_layer)
+        {
+            #ifndef NO_BATTERY
+            handle_battery(battery_state_service_peek());
+            #endif /* NO_BATTERY */
+        }
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "TIME COLOR DONE");
+    }
+    /* NOTE if new entries are added, increase MAX_MESSAGE_SIZE_OUT macro */
 }
 
+void wipe_config()
+{
+    (void) persist_delete(MESSAGE_KEY_TIME_COLOR);
+    (void) persist_delete(MESSAGE_KEY_BACKGROUND_COLOR);
+    (void) persist_delete(MESSAGE_KEY_VIBRATE_ON_DISCONNECT);
+}
+
+int get_major_app_version()
+{
+    /*
+    ** Internal API subject to change!
+    ** https://forums.pebble.com/t/how-can-i-get-my-app-version-in-c-code/7959
+    */
+    return __pbl_app_info.process_version.major;
+}
 
 void init()
 {
     time_color = DEFAULT_TIME_COLOR;
     background_color = DEFAULT_BACKGROUND_COLOR;
+    int major_version = get_major_app_version();
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "get_major_app_version: %d", major_version);
+    
+    if (persist_exists(MESSAGE_KEY_MAJOR_VERSION))
+    {
+        int stored_major_version = persist_read_int(MESSAGE_KEY_MAJOR_VERSION);
+
+        if(stored_major_version > major_version)
+        {
+            /* Upgrade logic goes here */
+            wipe_config();  // Quick and dirty
+        }
+        /*
+        ** Minor version bumps are assumed to be settings compatible
+        ** (override this logic if that is not true).
+        */
+    }
+    else
+    {
+        /* Does NOT exist - wipe out settings just in case... */
+        wipe_config();
+    }
 
 #ifdef PBL_COLOR
     /* TODO refactor */
-    if (persist_exists(KEY_TIME_COLOR))
+    if (persist_exists(MESSAGE_KEY_TIME_COLOR))
     {
-        config_time_color = persist_read_int(KEY_TIME_COLOR);
+        config_time_color = persist_read_int(MESSAGE_KEY_TIME_COLOR);
         APP_LOG(APP_LOG_LEVEL_INFO, "Read time color: %x", config_time_color);
         time_color = GColorFromHEX(config_time_color);
     }
-    if (persist_exists(KEY_BACKGROUND_COLOR))
+    if (persist_exists(MESSAGE_KEY_BACKGROUND_COLOR))
     {
-        config_background_color = persist_read_int(KEY_BACKGROUND_COLOR);
+        config_background_color = persist_read_int(MESSAGE_KEY_BACKGROUND_COLOR);
         APP_LOG(APP_LOG_LEVEL_INFO, "Read background color: %x", config_background_color);
         background_color = GColorFromHEX(config_background_color);
     }
 #endif /* PBL_COLOR */
 
-    if (persist_exists(KEY_VIBRATE_ON_DISCONNECT))
+    if (persist_exists(MESSAGE_KEY_VIBRATE_ON_DISCONNECT))
     {
-        config_time_vib_on_disconnect = persist_read_bool(KEY_VIBRATE_ON_DISCONNECT);
+        config_time_vib_on_disconnect = persist_read_bool(MESSAGE_KEY_VIBRATE_ON_DISCONNECT);
         APP_LOG(APP_LOG_LEVEL_INFO, "Read vib_on_disconnect: %d", (int) config_time_vib_on_disconnect);
     }
 

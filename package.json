@@ -1,6 +1,8 @@
 {
     "author": "clach04",
-    "dependencies": {},
+    "dependencies": {
+        "pebble-clay": "^1.0.1"
+    },
     "keywords": [],
     "name": "simple-steps",
     "pebble": {
@@ -10,11 +12,12 @@
         ],
         "displayName": "Simple Steps",
         "enableMultiJS": true,
-        "messageKeys": {
-            "KEY_BACKGROUND_COLOR": 2,
-            "KEY_TIME_COLOR": 0,
-            "KEY_VIBRATE_ON_DISCONNECT": 1
-        },
+        "messageKeys": [
+            "TIME_COLOR",
+            "VIBRATE_ON_DISCONNECT",
+            "BACKGROUND_COLOR",
+            "MAJOR_VERSION"
+        ],
         "projectType": "native",
         "resources": {
             "media": []
@@ -30,5 +33,5 @@
             "watchface": true
         }
     },
-    "version": "0.4.0"
+    "version": "0.4"
 }
