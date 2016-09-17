@@ -17,7 +17,10 @@ extern const PebbleProcessInfo __pbl_app_info;  // ONLY for get_major_app_versio
 #endif /* PBL_BW */
 
 Window    *main_window=NULL;
+#ifndef NO_TEXT_TIME_LAYER
 TextLayer *time_layer=NULL;
+#endif /* NO_TEXT_TIME_LAYER */
+
 TextLayer *date_layer=NULL;
 #ifndef DRAW_BATTERY
 TextLayer *battery_layer=NULL;
@@ -206,14 +209,20 @@ static void health_handler(HealthEventType event, void *context)
         case HealthEventSleepUpdate:
             APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService HealthEventSleepUpdate event");
             break;
-#ifdef PBL_PLATFORM_DIORITE  // FIXME replace with new equiv of PBL_SDK_4. Note, will not be needed once SDK4 is out of beta
+#if PBL_API_EXISTS(health_service_register_metric_alert)
         case HealthEventMetricAlert:
             APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService HealthEventMetricAlert event");
             break;
+#endif  // HealthEventMetricAlert
+#if PBL_API_EXISTS(health_service_set_heart_rate_sample_period)
         case HealthEventHeartRateUpdate:
             APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService HealthEventHeartRateUpdate event");
             break;
-#endif /* PBL_PLATFORM_DIORITE  */
+#endif // HealthEventHeartRateUpdate
+        // Default is not a good idea, but get switch warnings (about heart events) without it on Basalt/Chalk SDK4 builds
+        default:
+            APP_LOG(APP_LOG_LEVEL_INFO, "New HealthService UNHANDLED event");
+            break;
     }
 }
 
@@ -360,8 +369,33 @@ void cleanup_battery()
 #endif /* DRAW_BATTERY */
 }
 
+#ifndef NO_TEXT_TIME_LAYER
+void setup_text_time(Window *window)
+{
+    // Create time TextLayer
+    time_layer = text_layer_create(CLOCK_POS);
+    text_layer_set_background_color(time_layer, GColorClear);
+    text_layer_set_text_color(time_layer, time_color);
+    text_layer_set_text(time_layer, "00:00");
+
+    // Apply to TextLayer
+    text_layer_set_font(time_layer, time_font);
+    /* Consider GTextAlignmentLeft (with monospaced font) in cases where colon is proportional */
+    text_layer_set_text_alignment(time_layer, TIME_ALIGN);
+
+    // Add it as a child layer to the Window's root layer
+    layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
+}
+
+void cleanup_text_time()
+{
+    /* Destroy TextLayers */
+    text_layer_destroy(time_layer);
+}
+#endif /* NO_TEXT_TIME_LAYER */
+
 void update_date(struct tm *tick_time) {
-    static char buffer[] = MAX_DATE_STR;  /* FIXME use same buffer, one for both date and time? */
+    static char buffer[] = MAX_DATE_STR;  /* TODO use same buffer, one for both date and time? */
 
     last_day = tick_time->tm_mday;
     strftime(buffer, sizeof(buffer), DATE_FMT_STR, tick_time);
@@ -487,6 +521,8 @@ void cleanup_bt_image()
 }
 #endif /* BT_DISCONNECT_IMAGE_GRECT */
 
+
+#ifndef NO_TEXT_TIME_LAYER
 void update_time() {
     // Get a tm structure
     time_t    temp = time(NULL);
@@ -520,10 +556,10 @@ void update_time() {
         // Write the current hours and minutes into the buffer
         if(clock_is_24h_style() == true) {
             // 24h hour format
-            strftime(buffer, sizeof(buffer), "%H:%M", tick_time);
+            strftime(buffer, sizeof(buffer), TIME_FMT_STR_24H, tick_time);
         } else {
             // 12 hour format
-            strftime(buffer, sizeof(buffer), "%I:%M", tick_time); // produces leading zero for hour and minute
+            strftime(buffer, sizeof(buffer), TIME_FMT_STR_12H, tick_time);
         }
     }
 #endif /* DEBUG_TIME */
@@ -531,9 +567,9 @@ void update_time() {
 #ifdef REMOVE_LEADING_ZERO_FROM_TIME
     if(clock_is_24h_style() == false)
     {
-        if (buffer[0] == '0')
+        if (buffer[0] == '0' || buffer[0] == ' ')
         {
-            memmove(&buffer[0], &buffer[1], sizeof(buffer) - 1); // remove leading zero
+            memmove(&buffer[0], &buffer[1], sizeof(buffer) - 1); // remove leading character (really byte)
         }
     }
 #endif /* REMOVE_LEADING_ZERO_FROM_TIME */
@@ -557,6 +593,7 @@ void update_time() {
     psleep(DEBUG_TIME_PAUSE);
 #endif /* DEBUG_TIME_PAUSE */
 }
+#endif /* NO_TEXT_TIME_LAYER */
 
 void main_window_load(Window *window) {
     window_set_background_color(window, background_color);
@@ -569,12 +606,6 @@ void main_window_load(Window *window) {
     #endif /* BG_IMAGE_GRECT */
 #endif /* BG_IMAGE */
 
-    // Create time TextLayer
-    time_layer = text_layer_create(CLOCK_POS);
-    text_layer_set_background_color(time_layer, GColorClear);
-    text_layer_set_text_color(time_layer, time_color);
-    text_layer_set_text(time_layer, "00:00");
-
 #ifdef FONT_NAME
     // Create GFont
     time_font = fonts_load_custom_font(resource_get_handle(FONT_NAME));
@@ -582,13 +613,7 @@ void main_window_load(Window *window) {
     time_font = fonts_get_system_font(FONT_SYSTEM_NAME);
 #endif /* FONT_NAME */
 
-    // Apply to TextLayer
-    text_layer_set_font(time_layer, time_font);
-    /* Consider GTextAlignmentLeft (with monospaced font) in cases where colon is proportional */
-    text_layer_set_text_alignment(time_layer, TIME_ALIGN);
-
-    // Add it as a child layer to the Window's root layer
-    layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
+    SETUP_TIME(window);
 
 #ifndef NO_DATE
     setup_date(window);
@@ -647,9 +672,7 @@ void main_window_unload(Window *window) {
     cleanup_bg_image();
 #endif /* BG_IMAGE */
 
-    /* Destroy TextLayers */
-    text_layer_destroy(time_layer);
-
+    CLEANUP_TIME();
 
     /* unsubscribe events */
     tick_timer_service_unsubscribe();
@@ -674,6 +697,7 @@ void in_recv_handler(DictionaryIterator *iterator, void *context)
 {
     Tuple *t=NULL;
     bool wrote_config=false;
+    bool custom_wrote_config=false;
 
     /* NOTE if new entries are added, increase MAX_MESSAGE_SIZE_OUT macro */
 
@@ -710,7 +734,9 @@ void in_recv_handler(DictionaryIterator *iterator, void *context)
         persist_write_int(MESSAGE_KEY_TIME_COLOR, config_time_color);
         wrote_config = true;
         time_color = GColorFromHEX(config_time_color);
+#ifndef NO_TEXT_TIME_LAYER
         text_layer_set_text_color(time_layer, time_color);
+#endif /* NO_TEXT_TIME_LAYER */
 
         if (date_layer) /* or #ifndef NO_DATE */
         {
@@ -736,7 +762,11 @@ void in_recv_handler(DictionaryIterator *iterator, void *context)
     }
     /* NOTE if new entries are added, increase MAX_MESSAGE_SIZE_OUT macro */
 
-    if (wrote_config)
+#ifdef CUSTOM_IN_RECV_HANDLER
+    custom_wrote_config = CUSTOM_IN_RECV_HANDLER(iterator, context);
+#endif /* CUSTOM_IN_RECV_HANDLER */
+
+    if (wrote_config || custom_wrote_config)
     {
         persist_write_int(MESSAGE_KEY_MAJOR_VERSION, major_version);
     }
@@ -786,7 +816,6 @@ void init()
         wipe_config();
     }
 
-#ifdef PBL_COLOR
     /* TODO refactor */
     if (persist_exists(MESSAGE_KEY_TIME_COLOR))
     {
@@ -800,7 +829,6 @@ void init()
         APP_LOG(APP_LOG_LEVEL_INFO, "Read background color: %x", config_background_color);
         background_color = GColorFromHEX(config_background_color);
     }
-#endif /* PBL_COLOR */
 
     if (persist_exists(MESSAGE_KEY_VIBRATE_ON_DISCONNECT))
     {
@@ -821,7 +849,7 @@ void init()
     window_stack_push(main_window, true);
 
     /* Register events; TickTimerService, Battery */
-    tick_timer_service_subscribe(MINUTE_UNIT, TICK_HANDLER);
+    tick_timer_service_subscribe(TICK_HANDLER_INTERVAL, TICK_HANDLER);
 #ifdef DEBUG_TIME
     #ifndef DEBUG_TIME_SCREENSHOT
         tick_timer_service_subscribe(SECOND_UNIT, DEBUG_TICK_HANDLER);

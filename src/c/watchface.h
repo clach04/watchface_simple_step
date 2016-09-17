@@ -1,12 +1,6 @@
 #pragma once
 
 #include "watch_config.h"
-    
-/* PebbleKit JS, Message Keys, Pebble config keys */
-// FIXME why can't this be generated from the json settings file into a header?
-#define KEY_TIME_COLOR 0
-#define KEY_VIBRATE_ON_DISCONNECT 1
-#define KEY_BACKGROUND_COLOR 2
 
 #ifndef USE_MAX_MESSAGE_SIZE
     /*
@@ -39,7 +33,19 @@
 #define MAX_DATE_STR "Thu, 00 Aug"  /* if custom version of DATE_FMT_STR is set, MAX_DATE_STR  needs to be updated too */
 #endif /* DATE_FMT_STR */
 
-#define MAX_TIME_STR "00:00"
+#ifndef TIME_FMT_STR_12H
+    /*
+    ** See https://sourceware.org/newlib/libc.html#strftime
+    ** Assume 24h not set either
+    ** Examples:
+    **    24 Hour: "%H:%M" == "%R"
+    **    12 Hour: "%l:%M" NOTE leading space for hour. NOTE requires font to have a space character
+    **             Also see REMOVE_LEADING_ZERO_FROM_TIME
+    */
+    #define TIME_FMT_STR_24H "%R"
+    #define TIME_FMT_STR_12H "%I:%M"  // produces leading zero for both hour and minute
+    #define MAX_TIME_STR "00:00"
+#endif /* TIME_FMT_STR_24H */
 
 #ifndef BAT_FMT_STR
 #define BAT_FMT_STR "Bat: %d%%"
@@ -93,9 +99,21 @@
 #define TICK_HANDLER tick_handler
 #endif /* TICK_HANDLER */
 
+#ifndef TICK_HANDLER_INTERVAL
+#define TICK_HANDLER_INTERVAL MINUTE_UNIT
+#endif /* TICK_HANDLER_INTERVAL */
+
 #ifndef DEBUG_TICK_HANDLER
 #define DEBUG_TICK_HANDLER debug_tick_handler
 #endif /* DEBUG_TICK_HANDLER */
+
+#ifndef SETUP_TIME
+#define SETUP_TIME setup_text_time
+#endif /* SETUP_TIME */
+
+#ifndef CLEANUP_TIME
+#define CLEANUP_TIME cleanup_text_time
+#endif /* CLEANUP_TIME */
 
 #ifndef MAIN_WINDOW_LOAD
 #define MAIN_WINDOW_LOAD main_window_load
@@ -106,7 +124,10 @@
 #endif /* MAIN_WINDOW_UNLOAD */
 
 extern Window    *main_window;
+#ifndef NO_TEXT_TIME_LAYER
 extern TextLayer *time_layer;
+#endif /* NO_TEXT_TIME_LAYER */
+
 extern TextLayer *date_layer;
 #ifndef DRAW_BATTERY
 extern TextLayer *battery_layer;
@@ -140,10 +161,24 @@ extern void cleanup_date();
 extern void update_time();
 extern void main_window_load(Window *window);
 extern void main_window_unload(Window *window);
-extern void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 extern void in_recv_handler(DictionaryIterator *iterator, void *context);
 extern void init();
 extern void deinit();
+extern void TICK_HANDLER(struct tm *tick_time, TimeUnits units_changed);
+
+extern void CLEANUP_TIME();
+extern void SETUP_TIME(Window *window);
+
+/*
+** CUSTOM_IN_RECV_HANDLER() like app_message_register_inbox_received()
+** but returns bool flag if config was written to persistent storage
+*/
+extern bool CUSTOM_IN_RECV_HANDLER(DictionaryIterator *iterator, void *context);
+
+#ifndef PBL_HEALTH
+    // Ensure platforms without health do not accidentally attempt to build using health api
+    #undef USE_HEALTH
+#endif /* PBL_HEALTH */
 
 #if defined(PBL_HEALTH)
 extern TextLayer *health_tlayer;
