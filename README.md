@@ -1,7 +1,7 @@
 Watchface Framework
 ===================
 
-Working, ready to build Bare-Bones watch face for Pebble (OG/Classic, Time, and Round) Aplite, Basalt, and Chalk. With configuration and settings support.
+Working, ready to build Bare-Bones watch face for Pebble (OG/Classic, Time, and Round) Aplite, Basalt, and Chalk. With configuration and settings support via [Clay](https://github.com/pebble/clay).
 
 All the examples below use the same framework.
 
@@ -13,7 +13,18 @@ All the examples below use the same framework.
 <img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/132x132_bigtime_at_bottom.png" alt="Spawn Big Time  Pebble Time color screenshot">
 <img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/144x144_time_at_bottom.png" alt="Spawn Small Time  Pebble Time color screenshot">
 <img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/basic_watchface.png" alt="Spawn Big Time and Info  Pebble Time color screenshot">
-
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/120x120_spawn_battery_text_and_date.png" alt="Spawn with date/time screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/120x120_spawn_battery_drawn_and_date.png" alt="Spawn with date/time screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/120x120_spawn_battery_text_and_date_bw.png" alt="Spawn with date/time screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_spawn/images/120x120_spawn_battery_text_and_date_br.png" alt="Spawn with date/time screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_simple_step/screenshots/aplite_no_step_count.png" alt="Aplite Simple Step (no steps) screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_simple_step/screenshots/mono_step_count.png" alt="Basalt Mono Simple Step screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_simple_step/screenshots/mono_chalk_step_count.png" alt="Chalk Mono Simple Step screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_colony/images/180x180_chalk.png" alt="Colony Chalk screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_colony/images/132x132_basalt.png" alt="Colony Basalt screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_colony/images/132x132_aplite.png" alt="Colony Aplite screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_storm_trooper/screenshots/vector_outline_white.png" alt="StarWars Stormtrooper screenshot">
+<img src="https://raw.githubusercontent.com/wiki/clach04/watchface_storm_trooper/screenshots/vector_opaque_black.png" alt="StarWars Stormtrooper screenshot">
 
 
 Instructions
@@ -45,7 +56,7 @@ In an ideal situation, `watchface.c` and `watchface.h` should not need editing *
   * If `DEFAULT_TIME_COLOR` is defined it will be used for the default time color.
   * If `DEFAULT_BACKGROUND_COLOR` is defined it will be used for the default background time color.
   * If an image is present under resources and defined as `BG_IMAGE`, it will be used as a background image. For Basalt, image transparency is honored.
-  * If a font  present under resources and  defined as `FONT_NAME`, it will be used for displaying the time.
+  * If a font  present under resources and  defined as `FONT_NAME`, it will be used for displaying the time. E.g. `#define FONT_NAME RESOURCE_ID_.....`
   * If `FONT_SYSTEM_NAME` is defined to a system font name and `FONT_NAME` is not defined, that system font will be used for time display
   * if `REMOVE_LEADING_ZERO_FROM_TIME` is defined, and the watch is configured for 12 hour format display, the leading zero "0" will be removed for times in the morning.
   * `CLOCK_POS`, `BT_POS, DATE_POS`, and `BAT_POS` to change the on screen position of Time, Bluetooth disconnect message, Date, and battery power.
@@ -54,6 +65,7 @@ In an ideal situation, `watchface.c` and `watchface.h` should not need editing *
   * `BT_ALIGN`, `BAT_ALIGN`, and `TIME_ALIGN` are used to change text alignment.
   * If `BLUETOOTH_DISCONNECTED_STR` is defined, this text will be displayed for the Bluetooth disconnect message.
   * If `BT_DISCONNECT_IMAGE` is defined, this resource image will be displayed on bluetooth disconnect.
+      * `BT_DISCONNECT_IMAGE_GRECT` can be used to position the image
   * If `DATE_FMT_STR` is defined it will be used for the format of the date text.
   * If `BAT_FMT_STR` is defined it will be used for the format of the battery power text.
       * If `DRAW_SMALL_BATTERY` is defined a small gauge will be used.
@@ -67,16 +79,47 @@ In an ideal situation, `watchface.c` and `watchface.h` should not need editing *
 Examples
 --------
 
+  * Simple text watch, with step count https://github.com/clach04/watchface_simple_step - screenshots https://github.com/clach04/watchface_simple_step/wiki
   * https://github.com/clach04/watchface_JupiterMass - Black and White, Color, and Round support
       * https://github.com/clach04/watchface_JupiterMass/blob/master/src/watch_config.h + the resources (font and image) that make this different from the basic template)
-  * https://github.com/clach04/watchface_spawn/wiki - has a number of branches showing different ideas and formats for a watchface with changes only made in watch_config.h. Uses builtin system font and a single PNG image (with transparency) To import and demo these:
+  * https://github.com/clach04/watchface_spawn/wiki - has a number of branches showing different ideas and formats for a watchface with different round image sizes (leaving different amounts of space) and watch_config.h changes. Uses builtin system font and a single PNG image (with transparency). Also see https://github.com/clach04/watchface_colony/wiki. To import and demo these:
+      * https://cloudpebble.net/ide/import/github/clach04/watchface_spawn/120x120_bigtime_at_bottom_battery_and_date
       * https://cloudpebble.net/ide/import/github/clach04/watchface_spawn/132x132_bigtime_at_bottom
       * https://cloudpebble.net/ide/import/github/clach04/watchface_spawn/144x144_time_at_bottom
       * https://cloudpebble.net/ide/import/github/clach04/watchface_spawn/basic_watchface
   * https://github.com/clach04/watchface_CapNion
       * https://github.com/clach04/watchface_CapNion/blob/master/src/watch_config.h + the resources (font and image) that make this different from the basic template)
-  * https://github.com/clach04/watchface_Paragade - NOTE slightly more complicated than JupiterMass and CapNion as it has a custom ticker (and setup/cleanup)
+  * https://github.com/clach04/watchface_Paragade - NOTE slightly more complicated than JupiterMass and CapNion as it has:
+      * a custom ticker
+      * setup/cleanup
+      * uses a package dependency on the excellent https://github.com/ygalanter/EffectLayer library
       * See https://github.com/clach04/watchface_ParaGade/blob/master/src/watch_config.h and https://github.com/clach04/watchface_ParaGade/blob/master/src/main.c
+
+Simple Tutorial 1
+-----------------
+
+1. Import into CloudPebble, click https://cloudpebble.net/ide/import/github/clach04/watchface_framework/ to import
+2. Edit `watch_config.h` at the bottom, add the following lines:
+
+        #define TICK_HANDLER_INTERVAL SECOND_UNIT  / Update once per second
+        #define TIME_FMT_STR_24H "%R:%S"  // Display seconds
+        #define TIME_FMT_STR_12H "%I:%M:%S"  // Display seconds, produces leading zero for hour,minute, and seconds
+        #define MAX_TIME_STR "00:00:00"  // Ensure space allocated for string representation of time
+        #define FONT_SYSTEM_NAME FONT_KEY_ROBOTO_CONDENSED_21  // Use a medium sized system  font
+
+This will show seconds (the `%S` in both formats) and update once a second (by setting `TICK_HANDLER_INTERVAL` to update once a second). `MAX_TIME_STR` is updated to ensure space is allocated for both the colon and the two digits.
+
+Simple Tutorial 2
+-----------------
+
+1. Import into CloudPebble, click https://cloudpebble.net/ide/import/github/clach04/watchface_framework/ to import
+2. Add a Resource (lower left corner), load a TTF font, e.g. upload the .ttf files from https://www.fontsquirrel.com/fonts/permanent-marker
+3. Name the resource `FONT_50` - 50 means scale to 50 (optional enter in the CHARACTERS field `[0-9:.]` to only use the characters needed for time, makes watchface smaller), Click Save.
+4. Edit `watch_config.h` add line `#define FONT_NAME RESOURCE_ID_FONT_50` add after (or replace) '#undef FONT_NAME' to match resource name above
+5. Build and run :-)
+6. Try experimenting with different font sizes, make use of `#define DEBUG_TIME` to try wide fonts. For example using the permanent-marker font above with size 60 looks fine for some times but not all. DEBUG_TIME quickly tries a number of different times to check sizes.
+
+NOTE there are limitations in the Pebble SDK/Firmware on maximum font size. 60 is the absolute maximum, and for some fonts even 60 is problematic. Very large fonts need to be converted into bitmaps, see https://github.com/pebble-examples/big-time
 
 Notes and other resources
 -------------------------
